@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>عجلة العلوم الشرعية</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Tajawal -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+        }
+        .primary-text { color: #304F6D; }
+        .primary-bg { background-color: #304F6D; }
+        .primary-bg-hover:hover { background-color: #243b55; }
+        .primary-ring-focus:focus { --tw-ring-color: #304F6D; }
+        #scienceWheel {
+            width: 100%;
+            height: 100%;
+        }
+        /* Custom scrollbar for the plan area */
+        #chartDiv::-webkit-scrollbar {
+            width: 8px;
+        }
+        #chartDiv::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        #chartDiv::-webkit-scrollbar-thumb {
+            background: #c49664;
+            border-radius: 10px;
+        }
+        #chartDiv::-webkit-scrollbar-thumb:hover {
+            background: #a57c50;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 flex flex-col min-h-screen">
+
+    <div id="page-container" class="flex-grow">
+        <div class="container mx-auto p-2 sm:p-6 lg:p-8">
+            <header class="text-center mb-8">
+                <h1 class="text-3xl md:text-4xl font-bold primary-text">عجلة العلوم الشرعية</h1>
+                <p class="mt-2 text-md text-gray-700">أداة لتقييم مستواك في العلوم الشرعية الأساسية</p>
+            </header>
+
+            <main id="mainContent">
+                <!-- Questionnaire Section -->
+                <div id="questionnaireDiv" class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-6 p-3 text-white rounded-lg text-right" style="background-color: #c49664;">حدد مستواك في كل علم</h2>
+                    <form id="scienceForm" class="space-y-5">
+                        <!-- Form fields will be dynamically generated here -->
+                    </form>
+                    <button id="generateChartBtn" class="w-full mt-8 primary-bg text-white font-bold py-3 px-4 rounded-lg primary-bg-hover focus:outline-none focus:ring-2 focus:ring-offset-2 primary-ring-focus transition-transform transform hover:scale-105">
+                        إظهار النتيجة
+                    </button>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Chart Section (Fullscreen modal) -->
+    <div id="chartDiv" class="hidden fixed inset-0 bg-white z-30 flex-col items-center justify-start py-2 overflow-y-auto">
+         <button id="backToFormBtn" class="absolute top-4 right-4 z-40 bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md hover:bg-gray-200 transition-colors" title="العودة للاستبيان">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+         </button>
+         <!-- Chart container size maximized -->
+         <div id="chartContainer" class="w-[98vmin] h-[98vmin] relative flex-shrink-0">
+            <canvas id="scienceWheel"></canvas>
+        </div>
+        <button id="showPlanBtn" class="hidden mt-4 primary-bg text-white font-bold py-3 px-6 rounded-lg primary-bg-hover focus:outline-none focus:ring-2 focus:ring-offset-2 primary-ring-focus transition-transform transform hover:scale-105">
+            إظهار الخطة المقترحة
+        </button>
+        <!-- Study Plan Display Area -->
+        <div id="planDisplayArea" class="hidden w-full max-w-3xl mt-8 px-4 pb-8">
+            <!-- Plan will be generated here -->
+        </div>
+        <!-- Footer for the chart page -->
+        <footer id="chartFooter" class="hidden text-center text-gray-500 text-sm py-4 mt-auto">
+            <p>جميع الحقوق محفوظة - جمعية تأصيل التعليمية 2025م-1447هـ</p>
+        </footer>
+    </div>
+
+    <footer id="mainFooter" class="text-center text-gray-500 text-sm py-4 mt-auto">
+        <p>جميع الحقوق محفوظة - جمعية تأصيل التعليمية 2025م-1447هـ</p>
+    </footer>
+
+    <script>
+        // --- DATA ---
+        const sciences = [
+            "العقيدة", "التفسير", "علوم القرآن", "السنة النبوية",
+            "مصطلح الحديث", "الفقه", "أصول الفقه", "اللغة العربية"
+        ];
+        const levels = [
+            { value: 1, text: "معرفة بعض مسائل الفن ومصطلحاته" },
+            { value: 2, text: "قراءة كتاب أو حضور درس تأسيسي" },
+            { value: 3, text: "حفظ متن تأسيسي في الفن" },
+            { value: 4, text: "دراسة كتاب أو متن متوسط" },
+            { value: 5, text: "شرح متن تأسيسي" }
+        ];
+        const layerColors = {
+            bright: { 1: '#ef4444', 2: '#f97316', 3: '#eab308', 4: '#22c55e', 5: '#3b82f6' },
+            faded: { 1: 'rgba(239, 68, 68, 0.2)', 2: 'rgba(249, 115, 22, 0.2)', 3: 'rgba(234, 179, 8, 0.2)', 4: 'rgba(34, 197, 94, 0.2)', 5: 'rgba(59, 130, 246, 0.2)'}
+        };
+
+        const studyPlanData = {
+            "العقيدة": {
+                1: { title: "معرفة بعض مسائل الفن ومصطلحاته", book: '"الأصول الثلاثة وأدلتها" و"القواعد الأربع" للشيخ محمد بن عبد الوهاب.', شرح: 'شرح الشيخ محمد بن صالح العثيمين، فهو واضح ومناسب للمبتدئين.' },
+                2: { title: "قراءة كتاب أو حضور درس تأسيسي", book: '"لمعة الاعتقاد الهادي إلى سبيل الرشاد" لابن قدامة المقدسي.', شرح: 'شرح الشيخ محمد بن صالح العثيمين، أو شرح الشيخ صالح آل الشيخ.' },
+                3: { title: "حفظ متن تأسيسي في الفن", book: 'المتن: "كتاب التوحيد الذي هو حق الله على العبيد" للشيخ محمد بن عبد الوهاب.', شرح: 'الشرح للمساعدة على الحفظ والفهم: "القول المفيد على كتاب التوحيد" للشيخ ابن عثيمين.' },
+                4: { title: "دراسة كتاب أو متن متوسط", book: '"العقيدة الواسطية" لشيخ الإسلام ابن تيمية.', شرح: '"شرح العقيدة الواسطية" للشيخ محمد بن صالح العثيمين، أو "التنبيهات السنية على العقيدة الواسطية" للشيخ عبد العزيز بن ناصر الرشيد.' },
+                5: { title: "شرح متن تأسيسي", book: '"شرح العقيدة الطحاوية" لابن أبي العز الحنفي.', شرح: 'الشرح المساند: يمكن الاستعانة بتحقيقات وتعليقات العلماء على هذا الشرح، مثل تعليقات الشيخ الألباني أو الشيخ شعيب الأرناؤوط.' }
+            },
+            "التفسير": {
+                1: { title: "معرفة بعض مسائل الفن ومصطلحاته", book: '"أصول في التفسير" للشيخ محمد بن صالح العثيمين.', شرح: 'الكتاب هو شرح في الأصل، ويمكن الاستماع لشرح صوتي للشيخ نفسه لزيادة الفهم.' },
+                2: { title: "قراءة كتاب أو حضور درس تأسيسي", book: '"تفسير العشر الأخير من القرآن الكريم ويليه أحكام تهم المسلم".', شرح: 'الكتاب من إعداد نخبة من العلماء، وهو يركز على جزء عمَّ مع ما يحتاجه المسلم من أحكام أساسية.' },
+                3: { title: "حفظ متن تأسيسي في الفن", book: '"المصباح المنير في تهذيب تفسير ابن كثير" لمجموعة من العلماء بإشراف الشيخ صفي الرحمن المباركفوري.', شرح: 'هذا الكتاب مختصر، والهدف منه هو القراءة المستمرة والرجوع إليه لفهم معاني الآيات بشكل عام.' },
+                4: { title: "دراسة كتاب أو متن متوسط", book: '"تيسير الكريم الرحمن في تفسير كلام المنان" (تفسير السعدي) للشيخ عبد الرحمن بن ناصر السعدي.', شرح: 'يمتاز هذا التفسير بأسلوبه السهل وعباراته الواضحة وتركيزه على المعنى الإجمالي للآيات.' },
+                5: { title: "شرح متن تأسيسي", book: '"جامع البيان عن تأويل آي القرآن" (تفسير الطبري) للإمام محمد بن جرير الطبري.', شرح: 'يعتبر أصلاً لكتب التفسير، وفي هذه المرحلة المتقدمة يرجع إليه طالب العلم لفهم أقوال السلف والمقارنة بينها.' }
+            },
+            "علوم القرآن": {
+                1: { title: "معرفة بعض مسائل الفن ومصطلحاته", book: '"لمحات في علوم القرآن" لمحمد الصباغ.', شرح: 'الكتاب سهل العبارة ويعطي تصوراً عاماً عن الفن.' },
+                2: { title: "قراءة كتاب أو حضور درس تأسيسي", book: '"مباحث في علوم القرآن" لمناع القطان.', شرح: 'يعتبر من أشهر الكتب المعاصرة في هذا الباب، ويتميز بالشمول والترتيب.' },
+                3: { title: "حفظ متن تأسيسي في الفن", book: 'المتن: "مقدمة في أصول التفسير" لشيخ الإسلام ابن تيمية.', شرح: 'شرح الشيخ محمد بن صالح العثيمين.' },
+                4: { title: "دراسة كتاب أو متن متوسط", book: '"البرهان في علوم القرآن" للإمام الزركشي.', شرح: 'يمكن الاستعانة بالدراسات المعاصرة التي تتناول كتاب البرهان بالتحليل والشرح.' },
+                5: { title: "شرح متن تأسيسي", book: '"الإتقان في علوم القرآن" للإمام السيوطي.', شرح: 'يُقرأ مع حواشي وتحقيقات المحققين، ويقارن بما في "البرهان" للزركشي.' }
+            },
+            "السنة النبوية": {
+                1: { title: "معرفة بعض مسائل الفن ومصطلحاته", book: '"الأربعون النووية" للإمام النووي.', شرح: 'شرح الشيخ محمد بن صالح العثيمين، أو "جامع العلوم والحكم" لابن رجب الحنبلي (وهو شرح موسع).' },
+                2: { title: "قراءة كتاب أو حضور درس تأسيسي", book: '"رياض الصالحين" للإمام النووي.', شرح: '"شرح رياض الصالحين" للشيخ محمد بن صالح العثيمين.' },
+                3: { title: "حفظ متن تأسيسي في الفن", book: 'المتن: "عمدة الأحكام من كلام خير الأنام" للحافظ عبد الغني المقدسي.', شرح: '"تيسير العلام شرح عمدة الأحكام" للشيخ عبد الله البسام.' },
+                4: { title: "دراسة كتاب أو متن متوسط", book: '"بلوغ المرام من أدلة الأحكام" للحافظ ابن حجر العسقلاني.', شرح: '"سبل السلام" للصنعاني، مع حواشي وتعليقات الشيخ الألباني.' },
+                5: { title: "شرح متن تأسيسي", book: '"صحيح البخاري" أو "صحيح مسلم".', شرح: '"فتح الباري شرح صحيح البخاري" لابن حجر العسقلاني، و"المنهاج شرح صحيح مسلم بن الحجاج" للإمام النووي.' }
+            },
+            "مصطلح الحديث": {
+                1: { title: "معرفة بعض مسائل الفن ومصطلحاته", book: '"تيسير مصطلح الحديث" للدكتور محمود الطحان.', شرح: 'الكتاب نفسه مبسط وواضح.' },
+                2: { title: "قراءة كتاب أو حضور درس تأسيسي", book: '"المنظومة البيقونية" لعمر بن محمد البيقوني.', شرح: 'شرح الشيخ محمد بن صالح العثيمين على المنظومة البيقونية.' },
+                3: { title: "حفظ متن تأسيسي في الفن", book: 'المتن: "نخبة الفِكَر في مصطلح أهل الأثر" للحافظ ابن حجر العسقلاني.', شرح: 'الشرح للمساعدة على الحفظ والفهم: "نزهة النظر في توضيح نخبة الفكر" وهو شرح للمؤلف نفسه (ابن حجر).' },
+                4: { title: "دراسة كتاب أو متن متوسط", book: '"اختصار علوم الحديث" للحافظ ابن كثير.', شرح: '"الباعث الحثيث شرح اختصار علوم الحديث" للشيخ أحمد شاكر.' },
+                5: { title: "شرح متن تأسيسي", book: '"علوم الحديث" لابن الصلاح (المعروف بـ "مقدمة ابن الصلاح").', شرح: 'الشرح المساند: "النكت على كتاب ابن الصلاح" للحافظ ابن حجر، و"التقييد والإيضاح" للحافظ العراقي.' }
+            },
+            "الفقه": {
+                1: { title: "معرفة بعض مسائل الفن ومصطلحاته", book: 'متن فقهي مختصر جدًا حسب المذهب المتبع، مثل "متن أبي شجاع" (للشافعية) أو "أخصر المختصرات" (للحنابلة).', شرح: 'شرح صوتي مبسط لأحد المشايخ المعاصرين.' },
+                2: { title: "قراءة كتاب أو حضور درس تأسيسي", book: '"عمدة الفقه" لابن قدامة المقدسي (للحنابلة)، أو ما يماثله في المذاهب الأخرى.', شرح: 'يوجد شروح صوتية ومرئية كثيرة لهذا المتن.' },
+                3: { title: "حفظ متن تأسيسي في الفن", book: 'المتن: "زاد المستقنع في اختصار المقنع" للحجاوي (للحنابلة).', شرح: 'الشرح للمساعدة على الحفظ والفهم: "الشرح الممتع على زاد المستقنع" للشيخ محمد بن صالح العثيمين.' },
+                4: { title: "دراسة كتاب أو متن متوسط", book: '"الكافي في فقه الإمام أحمد" لابن قدامة (للحنابلة)، أو "بداية المجتهد ونهاية المقتصد" لابن رشد (فقه مقارن).', شرح: 'يمكن دراسته مع شيخ متخصص أو بالرجوع إلى شروح وحواشي أهل العلم.' },
+                5: { title: "شرح متن تأسيسي", book: '"المغني" لابن قدامة المقدسي.', شرح: 'يعتبر "المغني" موسوعة في الفقه المقارن، والمطالعة فيه ودراسته هي مرحلة متقدمة بحد ذاتها.' }
+            },
+            "أصول الفقه": {
+                1: { title: "معرفة بعض مسائل الفن ومصطلحاته", book: '"الأصول من علم الأصول" للشيخ محمد بن صالح العثيمين.', شرح: 'الكتاب هو شرح للمؤلف على متن كتبه، ويعد مدخلاً ممتازاً.' },
+                2: { title: "قراءة كتاب أو حضور درس تأسيسي", book: '"متن الورقات في أصول الفقه" لإمام الحرمين الجويني.', شرح: 'شرح الشيخ عبد الله الفوزان أو شرح الشيخ صالح آل الشيخ.' },
+                3: { title: "حفظ متن تأسيسي في الفن", book: 'المتن: "متن الورقات" للجويني.', شرح: 'الشرح للمساعدة على الحفظ والفهم: يمكن إعادة الاستماع لشرح مختصر وميسر للمتن.' },
+                4: { title: "دراسة كتاب أو متن متوسط", book: '"مذكرة في أصول الفقه" للشيخ محمد الأمين الشنقيطي.', شرح: 'شرح الشيخ عطية سالم (تلميذ المؤلف).' },
+                5: { title: "شرح متن تأسيسي", book: '"روضة الناظر وجنة المناظر" لابن قدامة المقدسي.', شرح: '"شرح روضة الناظر" لعبد الكريم النملة أو غيره من الشروح المعاصرة.' }
+            },
+            "اللغة العربية": {
+                1: { title: "معرفة بعض مسائل الفن ومصطلحاته (النحو)", book: '"المقدمة الآجرومية" لابن آجروم.', شرح: '"التحفة السنية بشرح المقدمة الآجرومية" لمحمد محيي الدين عبد الحميد.' },
+                2: { title: "قراءة كتاب أو حضور درس تأسيسي (النحو)", book: '"متن قطر الندى وبل الصدى" لابن هشام الأنصاري.', شرح: 'شرح المؤلف نفسه على الكتاب، مع حاشية محمد محيي الدين عبد الحميد.' },
+                3: { title: "حفظ متن تأسيسي في الفن (النحو والصرف)", book: 'المتن: "ألفية ابن مالك في النحو والصرف".', شرح: 'الشرح للمساعدة على الحفظ والفهم: "الشرح الميسر على ألفية ابن مالك" للدكتور عبد العزيز الحربي.' },
+                4: { title: "دراسة كتاب أو متن متوسط (النحو)", book: '"شرح ابن عقيل على ألفية ابن مالك".', شرح: 'الاستعانة بحاشية الخضري على شرح ابن عقيل.' },
+                5: { title: "شرح متن تأسيسي (النحو)", book: '"مغني اللبيب عن كتب الأعاريب" لابن هشام الأنصاري.', شرح: 'تحقيق وشرح الدكتور مازن المبارك ومحمد علي حمد الله.' }
+            }
+        };
+
+
+        // --- DOM ELEMENTS ---
+        const form = document.getElementById('scienceForm');
+        const generateBtn = document.getElementById('generateChartBtn');
+        const canvas = document.getElementById('scienceWheel');
+        const chartContainer = document.getElementById('chartContainer');
+        const ctx = canvas.getContext('2d');
+        const mainContent = document.getElementById('mainContent');
+        const pageContainer = document.getElementById('page-container');
+        const mainFooter = document.getElementById('mainFooter');
+        const chartFooter = document.getElementById('chartFooter');
+        const chartDiv = document.getElementById('chartDiv');
+        const backToFormBtn = document.getElementById('backToFormBtn');
+        const showPlanBtn = document.getElementById('showPlanBtn');
+        const planDisplayArea = document.getElementById('planDisplayArea');
+
+
+        // --- ANIMATION STATE ---
+        let animationFrameId;
+        let selectedLevels = [];
+        let animationState = {};
+
+        // --- Easing function for a smooth pop effect ---
+        function easeOutCubic(t) {
+            return (--t) * t * t + 1;
+        }
+
+        // --- FUNCTIONS ---
+        
+        function populateForm() {
+            sciences.forEach((science, index) => {
+                const div = document.createElement('div');
+                const label = document.createElement('label');
+                label.htmlFor = `science-${index}`;
+                label.className = "block text-md font-medium primary-text mb-2";
+                label.textContent = science;
+                const select = document.createElement('select');
+                select.id = `science-${index}`;
+                select.name = `science-${index}`;
+                select.className = "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-gray-50 focus:outline-none focus:ring-[#c49664] focus:border-[#c49664] sm:text-sm rounded-md transition-colors duration-200";
+                const defaultOption = document.createElement('option');
+                defaultOption.textContent = "اختر مستواك...";
+                defaultOption.value = "0";
+                defaultOption.disabled = true;
+                defaultOption.selected = true;
+                select.appendChild(defaultOption);
+                levels.forEach(level => {
+                    const option = document.createElement('option');
+                    option.value = level.value;
+                    option.textContent = level.text;
+                    select.appendChild(option);
+                });
+
+                select.addEventListener('change', function() {
+                    if (this.value !== "0") {
+                        const selectedValue = parseInt(this.value);
+                        const color = layerColors.bright[selectedValue];
+                        this.style.backgroundColor = color;
+                        this.style.color = 'white';
+                    } else {
+                        this.style.backgroundColor = ''; 
+                        this.style.color = ''; 
+                    }
+                });
+
+                div.appendChild(label);
+                div.appendChild(select);
+                form.appendChild(div);
+            });
+        }
+
+        function drawArc(centerX, centerY, innerRadius, outerRadius, startAngle, endAngle, color) {
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, outerRadius, startAngle, endAngle);
+            ctx.arc(centerX, centerY, innerRadius, endAngle, startAngle, true);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+        
+        function drawLabel(centerX, centerY, text, angle, radius) {
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(angle);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const fontSize = Math.min(radius / 18, 16);
+            ctx.font = `bold ${fontSize}px Tajawal`;
+            ctx.strokeStyle = '#304F6D'; 
+            ctx.lineWidth = 6;           
+            ctx.lineJoin = 'round';      
+            ctx.strokeText(text, radius * 0.8, 0);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(text, radius * 0.8, 0);
+            ctx.restore();
+        }
+
+        function drawCustomChart(state = { baseProgress: 1, highlightProgress: 1 }) {
+            const rect = chartContainer.getBoundingClientRect();
+            if (rect.width === 0) return;
+
+            const scale = window.devicePixelRatio || 1;
+            canvas.width = rect.width * scale;
+            canvas.height = rect.height * scale;
+            ctx.scale(scale, scale);
+
+            const logicalWidth = rect.width;
+            const logicalHeight = rect.height;
+            
+            const centerX = logicalWidth / 2;
+            const centerY = logicalHeight / 2;
+            const maxRadius = Math.min(centerX, centerY); 
+            const layerWidth = maxRadius / 5;
+            const sliceAngle = (2 * Math.PI) / sciences.length;
+            const startOffset = -Math.PI / 2;
+
+            ctx.clearRect(0, 0, logicalWidth, logicalHeight);
+
+            const easedBaseProgress = easeOutCubic(state.baseProgress);
+
+            sciences.forEach((_, i) => {
+                const startAngle = i * sliceAngle + startOffset;
+                const endAngle = (i + 1) * sliceAngle + startOffset;
+                for (let j = 1; j <= 5; j++) {
+                    const innerRadius = (j - 1) * layerWidth;
+                    const outerRadius = innerRadius + (layerWidth * easedBaseProgress);
+                    drawArc(centerX, centerY, innerRadius, outerRadius, startAngle, endAngle, layerColors.faded[j]);
+                }
+            });
+
+            if (state.baseProgress >= 1) { 
+                const sectionsToHighlight = state.highlightProgress * sciences.length;
+                
+                for (let i = 0; i < sciences.length; i++) {
+                    const userLevel = selectedLevels[i];
+                    if (!userLevel) continue;
+                    
+                    let sectionProgress = 0;
+                    if (i < sectionsToHighlight - 1) {
+                        sectionProgress = 1; 
+                    } else if (i < sectionsToHighlight) {
+                        sectionProgress = sectionsToHighlight - i; 
+                    }
+                    
+                    if (sectionProgress > 0) {
+                        const easedSectionProgress = easeOutCubic(sectionProgress);
+                        const startAngle = i * sliceAngle + startOffset;
+                        const endAngle = (i + 1) * sliceAngle + startOffset;
+                        const innerRadius = (userLevel - 1) * layerWidth;
+                        const outerRadius = innerRadius + (layerWidth * easedSectionProgress);
+                        drawArc(centerX, centerY, innerRadius, outerRadius, startAngle, endAngle, layerColors.bright[userLevel]);
+                    }
+                }
+            }
+           
+            ctx.globalAlpha = easedBaseProgress; 
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 3;
+            for (let i = 0; i < sciences.length; i++) {
+                const angle = i * sliceAngle + startOffset;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(centerX + maxRadius * Math.cos(angle), centerY + maxRadius * Math.sin(angle));
+                ctx.stroke();
+            }
+            
+            for (let i = 0; i < sciences.length; i++) {
+                 const labelAngle = (i + 0.5) * sliceAngle + startOffset;
+                drawLabel(centerX, centerY, sciences[i], labelAngle, maxRadius);
+            }
+            ctx.globalAlpha = 1; 
+        }
+        
+        function startAnimation() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+
+            animationState = { phase: 'drawingBase', startTime: null };
+            const baseDuration = 600;
+            const highlightDuration = 800;
+
+            const animationLoop = (timestamp) => {
+                if (!animationState.startTime) animationState.startTime = timestamp;
+                const elapsed = timestamp - animationState.startTime;
+                let continueAnimation = true;
+
+                if (animationState.phase === 'drawingBase') {
+                    const progress = Math.min(elapsed / baseDuration, 1);
+                    drawCustomChart({ baseProgress: progress, highlightProgress: 0 });
+                    if (progress >= 1) {
+                        animationState.phase = 'highlighting';
+                        animationState.startTime = timestamp;
+                    }
+                } else if (animationState.phase === 'highlighting') {
+                    const progress = Math.min(elapsed / highlightDuration, 1);
+                    drawCustomChart({ baseProgress: 1, highlightProgress: progress });
+                    if (progress >= 1) {
+                        drawCustomChart({ baseProgress: 1, highlightProgress: 1 });
+                        continueAnimation = false;
+                    }
+                }
+
+                if (continueAnimation) {
+                    animationFrameId = requestAnimationFrame(animationLoop);
+                }
+            };
+            animationFrameId = requestAnimationFrame(animationLoop);
+        }
+
+        function generateChart() {
+            let allSelected = true;
+            selectedLevels = [];
+            for (let i = 0; i < sciences.length; i++) {
+                const select = document.getElementById(`science-${i}`);
+                if (!select.value || select.value === "0") {
+                    allSelected = false;
+                    break;
+                }
+                selectedLevels.push(parseInt(select.value));
+            }
+            
+            if (!allSelected) {
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4';
+                modal.innerHTML = `<div class="bg-white p-6 rounded-lg shadow-xl text-center max-w-sm mx-auto">
+                    <p class="text-xl font-medium text-gray-800 mb-2">تنبيه</p>
+                    <p class="py-3 text-gray-600">الرجاء اختيار مستواك في جميع العلوم أولاً.</p>
+                    <button onclick="this.parentElement.parentElement.remove()" class="mt-4 px-6 py-2 primary-bg text-white rounded-md primary-bg-hover focus:outline-none focus:ring-2 focus:ring-offset-2 primary-ring-focus">حسنًا</button>
+                    </div>`;
+                document.body.appendChild(modal);
+                return;
+            }
+
+            pageContainer.classList.add('hidden');
+            mainFooter.classList.add('hidden');
+            chartDiv.classList.remove('hidden');
+            chartDiv.classList.add('flex');
+            backToFormBtn.classList.remove('hidden');
+            showPlanBtn.classList.remove('hidden');
+            chartFooter.classList.remove('hidden');
+            planDisplayArea.classList.add('hidden'); 
+            
+            setTimeout(startAnimation, 50);
+        }
+
+        function generateAndShowPlan() {
+            const userProgress = sciences.map((science, index) => ({
+                name: science,
+                level: selectedLevels[index]
+            }));
+
+            userProgress.sort((a, b) => a.level - b.level);
+
+            planDisplayArea.innerHTML = ''; 
+            
+            const planHeader = document.createElement('h3');
+            planHeader.className = "text-2xl font-bold primary-text mb-4 text-center";
+            planHeader.textContent = "الخطة الدراسية المقترحة";
+            planDisplayArea.appendChild(planHeader);
+
+
+            userProgress.forEach((scienceInfo, index) => {
+                const targetLevel = scienceInfo.level < 5 ? scienceInfo.level + 1 : 5;
+                const planData = studyPlanData[scienceInfo.name][targetLevel];
+                
+                if (planData) {
+                    const section = document.createElement('div');
+                    section.className = 'mb-6 pb-4 border-b last:border-b-0 border-gray-200';
+
+                    section.innerHTML = `
+                        <h4 class="text-xl font-bold primary-text mb-2">${index + 1}. ${scienceInfo.name}</h4>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="font-semibold text-md" style="color: ${layerColors.bright[targetLevel]}">
+                                ${scienceInfo.level < 5 ? `الارتقاء للمستوى ${targetLevel}:` : `للتوسع في المستوى ${targetLevel}:`}
+                                <span class="text-gray-800">${planData.title}</span>
+                            </p>
+                            <p class="mt-3 text-gray-700"><strong class="primary-text">الكتاب المقترح:</strong> ${planData.book}</p>
+                            <p class="mt-2 text-gray-700"><strong class="primary-text">الشرح المقترح:</strong> ${planData.شرح}</p>
+                        </div>
+                    `;
+                    planDisplayArea.appendChild(section);
+                }
+            });
+
+            planDisplayArea.classList.remove('hidden');
+            showPlanBtn.classList.add('hidden'); 
+        }
+
+
+        // --- INITIALIZATION & EVENT LISTENERS ---
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            populateForm();
+        });
+
+        generateBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            generateChart();
+        });
+
+        backToFormBtn.addEventListener('click', () => {
+            chartDiv.classList.add('hidden');
+            chartDiv.classList.remove('flex');
+            pageContainer.classList.remove('hidden');
+            mainFooter.classList.remove('hidden');
+            backToFormBtn.classList.add('hidden');
+            showPlanBtn.classList.add('hidden');
+            planDisplayArea.classList.add('hidden');
+            chartFooter.classList.add('hidden');
+        });
+
+        showPlanBtn.addEventListener('click', generateAndShowPlan);
+        
+        window.addEventListener('resize', () => {
+            if (mainContent.classList.contains('hidden')) {
+                drawCustomChart({ baseProgress: 1, highlightProgress: 1 });
+            }
+        });
+
+    </script>
+</body>
+</html>
