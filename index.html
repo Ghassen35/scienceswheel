@@ -197,47 +197,60 @@
 
         // --- FUNCTIONS ---
         
-        function populateForm() {
-            sciences.forEach((science, index) => {
-                const div = document.createElement('div');
-                const label = document.createElement('label');
-                label.htmlFor = `science-${index}`;
-                label.className = "block text-md font-medium primary-text mb-2";
-                label.textContent = science;
-                const select = document.createElement('select');
-                select.id = `science-${index}`;
-                select.name = `science-${index}`;
-                select.className = "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-gray-50 focus:outline-none focus:ring-[#c49664] focus:border-[#c49664] sm:text-sm rounded-md transition-colors duration-200";
-                const defaultOption = document.createElement('option');
-                defaultOption.textContent = "اختر مستواك...";
-                defaultOption.value = "0";
-                defaultOption.disabled = true;
-                defaultOption.selected = true;
-                select.appendChild(defaultOption);
-                levels.forEach(level => {
-                    const option = document.createElement('option');
-                    option.value = level.value;
-                    option.textContent = level.text;
-                    select.appendChild(option);
-                });
+        // --- دالة جديدة لتحويل اللون ---
+function hexToRgba(hex, alpha = 0.4) {
+    hex = hex.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
-                select.addEventListener('change', function() {
-                    if (this.value !== "0") {
-                        const selectedValue = parseInt(this.value);
-                        const color = layerColors.bright[selectedValue];
-                        this.style.backgroundColor = color;
-                        this.style.color = 'white';
-                    } else {
-                        this.style.backgroundColor = ''; 
-                        this.style.color = ''; 
-                    }
-                });
+// --- دالة populateForm المحدثة ---
+function populateForm() {
+    sciences.forEach((science, index) => {
+        const div = document.createElement('div');
+        const label = document.createElement('label');
+        label.htmlFor = `science-${index}`;
+        label.className = "block text-md font-medium primary-text mb-2";
+        label.textContent = science;
+        const select = document.createElement('select');
+        select.id = `science-${index}`;
+        select.name = `science-${index}`;
+        select.className = "mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-gray-50 focus:outline-none focus:ring-[#c49664] focus:border-[#c49664] sm:text-sm rounded-md transition-colors duration-200";
+        const defaultOption = document.createElement('option');
+        defaultOption.textContent = "اختر مستواك...";
+        defaultOption.value = "0";
+        defaultOption.disabled = true;
+        defaultOption.selected = true;
+        select.appendChild(defaultOption);
+        levels.forEach(level => {
+            const option = document.createElement('option');
+            option.value = level.value;
+            option.textContent = level.text;
+            select.appendChild(option);
+        });
 
-                div.appendChild(label);
-                div.appendChild(select);
-                form.appendChild(div);
-            });
-        }
+        // Add event listener to change color on selection dynamically
+        select.addEventListener('change', function() {
+            if (this.value !== "0") {
+                const selectedValue = parseInt(this.value);
+                const hexColor = layerColors.bright[selectedValue];
+                // Apply color with opacity and change text to black
+                this.style.backgroundColor = hexToRgba(hexColor, 0.3); // 0.3 for 30% opacity
+                this.style.color = 'black';
+            } else {
+                // Reset to default styles
+                this.style.backgroundColor = ''; 
+                this.style.color = ''; 
+            }
+        });
+
+        div.appendChild(label);
+        div.appendChild(select);
+        form.appendChild(div);
+    });
+}
 
         function drawArc(centerX, centerY, innerRadius, outerRadius, startAngle, endAngle, color) {
             ctx.beginPath();
@@ -491,5 +504,6 @@
     </script>
 </body>
 </html>
+
 
 
