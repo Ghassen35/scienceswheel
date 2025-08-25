@@ -41,25 +41,20 @@
 </head>
 <body class="bg-gray-100 text-gray-800 flex flex-col min-h-screen">
 
+     <!-- Main Page Content -->
     <div id="page-container" class="flex-grow">
-        <div class="container mx-auto p-2 sm:p-6 lg:p-8">
-<!-- === بداية الهيدر الجديد المتناسق === -->
-<div class="flex items-center justify-between mb-8">
-    <!-- الشعار على اليسار -->
-    <div class="w-20 flex-shrink-0">
-        <img src="https://i.postimg.cc/xd7CwYDJ/w-C0r-I4uw-400x400-1-removebg-preview.png" alt="شعار" class="absolute top-4 left-4 sm:top-6 sm:left-6 lg:top-8 lg:left-8 w-20 h-20 object-contain z-20">
-    </div>
-
-    <!-- العنوان في الوسط -->
-    <header class="text-center flex-grow">
-        <h1 class="text-2xl md:text-3xl font-bold primary-text">عجلة العلوم الشرعية</h1>
-        <p class="mt-2 text-sm text-gray-700">أداة لتقييم مستواك في العلوم الشرعية الأساسية</p>
-    </header>
-
-    <!-- عنصر وهمي للموازنة على اليمين (للحفاظ على توسط العنوان) -->
-    <div class="w-20 flex-shrink-0"></div>
-</div>
-<!-- === نهاية الهيدر الجديد === -->
+        <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+            <!-- Header with Logo (Corrected) -->
+            <div class="flex items-center justify-between mb-8 h-20">
+                <div class="w-20 h-20 flex-shrink-0">
+                     <img src="https://i.postimg.cc/xd7CwYDJ/w-C0r-I4uw-400x400-1-removebg-preview.png" alt="شعار" class="w-full h-full object-contain">
+                </div>
+                <header class="text-center w-full px-4">
+                    <h1 class="text-2xl md:text-3xl font-bold primary-text">عجلة العلوم الشرعية</h1>
+                    <p class="mt-2 text-sm text-gray-700">أداة لتقييم مستواك في العلوم الشرعية الأساسية</p>
+                </header>
+                 <div class="w-20 flex-shrink-0"><!-- Spacer to balance the logo --></div>
+            </div>
             <main id="mainContent">
                 <!-- Questionnaire Section -->
                 <div id="questionnaireDiv" class="bg-white p-6 rounded-xl shadow-lg">
@@ -534,6 +529,7 @@ function populateForm() {
     </script>
 </body>
 </html>
+
 
 
 
